@@ -4,7 +4,6 @@ import {
   Delete,
   Get,
   Param,
-  ParseBoolPipe,
   ParseIntPipe,
   Patch,
   Post,
@@ -13,17 +12,18 @@ import {
 import { TodosService } from './todos.service';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
+import { GetTodosQueryDto } from './dto/get-todos-query.dto';
 
 @Controller('todos')
 export class TodosController {
   constructor(private readonly todosService: TodosService) {}
 
   @Get()
-  findAll(@Query('isCompleted', ParseBoolPipe) isCompleted?: boolean) {
-    if (isCompleted === undefined) {
+  findAll(@Query() query: GetTodosQueryDto) {
+    if (query.isCompleted === undefined) {
       return this.todosService.findAll();
     }
-    return this.todosService.findByStatus(isCompleted);
+    return this.todosService.findByStatus(query.isCompleted === 'true');
   }
 
   @Get(':id')
