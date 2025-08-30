@@ -5,14 +5,35 @@ import { UpdateTodoDto } from './dto/update-todo.dto';
 export interface Todo {
   id: number;
   title: string;
+  isCompleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 @Injectable()
 export class TodosService {
   private todos: Todo[] = [
-    { id: 1, title: 'belajar nestjs' },
-    { id: 2, title: 'belajar typescript' },
-    { id: 3, title: 'belajar laravel' },
+    {
+      id: 1,
+      title: 'belajar nestjs',
+      isCompleted: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    {
+      id: 2,
+      title: 'belajar typescript',
+      isCompleted: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    {
+      id: 3,
+      title: 'belajar laravel',
+      isCompleted: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
   ];
   private nextId = 4;
 
@@ -20,40 +41,49 @@ export class TodosService {
     return this.todos;
   }
 
-  findOneById(id: number): Todo | undefined {
-    return this.todos.find((todo) => todo.id === id);
+  findByStatus(isCompleted: boolean): Todo[] {
+    return this.todos.filter((todo) => todo.isCompleted === isCompleted);
   }
 
-  create(createTodoDto: CreateTodoDto): Todo {
+  findOneById(id: number): Todo | undefined {
+    const todo = this.todos.find((todo) => todo.id === id);
+
+    if (!todo) {
+      throw new NotFoundException(`Todo with ID ${id} not found`);
+    }
+
+    return todo;
+  }
+
+  createTodo(createTodoDto: CreateTodoDto): Todo {
     const newTodo: Todo = {
       id: this.nextId++,
       title: createTodoDto.title,
+      isCompleted: createTodoDto.isCompleted,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
     this.todos.push(newTodo);
     return newTodo;
   }
 
-  updateOneById(id: number, updateTodoDto: UpdateTodoDto): Todo | undefined {
+  updateOneById(id: number, updateTodoDto: UpdateTodoDto): Todo {
     const todoId = this.findOneById(id);
 
-    if (!todoId) {
-      return undefined;
-    }
+    const editedTodo: Todo = {
+      ...todoId,
+      ...updateTodoDto,
+      updatedAt: new Date(),
+    } as Todo;
 
-    if (updateTodoDto.title !== undefined) {
-      todoId.title = updateTodoDto.title;
-    }
+    this.todos = this.todos.map((t) => (t.id === id ? editedTodo : t));
 
-    return todoId;
+    return editedTodo;
   }
 
   deleteOneById(id: number): void {
-    const index = this.todos.findIndex((todo) => todo.id === id);
+    this.findOneById(id);
 
-    if (index === -1) {
-      throw new NotFoundException(`Todo with ID ${id} not found`);
-    }
-
-    this.todos.splice(index, 1);
+    this.todos = this.todos.filter((todo) => todo.id !== id);
   }
 }

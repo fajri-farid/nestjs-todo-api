@@ -4,9 +4,11 @@ import {
   Delete,
   Get,
   Param,
+  ParseBoolPipe,
   ParseIntPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { TodosService } from './todos.service';
 import { CreateTodoDto } from './dto/create-todo.dto';
@@ -17,8 +19,11 @@ export class TodosController {
   constructor(private readonly todosService: TodosService) {}
 
   @Get()
-  findAll() {
-    return this.todosService.findAll();
+  findAll(@Query('isCompleted', ParseBoolPipe) isCompleted?: boolean) {
+    if (isCompleted === undefined) {
+      return this.todosService.findAll();
+    }
+    return this.todosService.findByStatus(isCompleted);
   }
 
   @Get(':id')
@@ -28,7 +33,7 @@ export class TodosController {
 
   @Post()
   create(@Body() createTodoDto: CreateTodoDto) {
-    return this.todosService.create(createTodoDto);
+    return this.todosService.createTodo(createTodoDto);
   }
 
   @Patch(':id')
