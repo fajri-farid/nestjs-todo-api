@@ -20,10 +20,8 @@ export class TodosController {
 
   @Get()
   findAll(@Query() query: GetTodosQueryDto) {
-    if (query.isCompleted === undefined) {
-      return this.todosService.findAll();
-    }
-    return this.todosService.findByStatus(query.isCompleted === 'true');
+    const { isCompleted, limit, search, orderBy } = query;
+    return this.todosService.findByFilters(isCompleted, limit, search, orderBy);
   }
 
   @Get(':id')

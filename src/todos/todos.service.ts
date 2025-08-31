@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
+import { sortTodos } from './utils/todo-sort.util';
 
 export interface Todo {
   id: number;
@@ -41,8 +42,56 @@ export class TodosService {
     return this.todos;
   }
 
-  findByStatus(isCompleted: boolean): Todo[] {
-    return this.todos.filter((todo) => todo.isCompleted === isCompleted);
+  findByFilters(
+    isCompleted?: boolean,
+    limit?: number,
+    search?: string,
+    orderBy?: 'createdAt' | 'updatedAt' | 'asc' | 'desc',
+  ): Todo[] {
+    let result = [...this.todos];
+
+    if (isCompleted !== undefined) {
+      result = result.filter((todo) => todo.isCompleted === isCompleted);
+    }
+
+    if (search !== undefined) {
+      result = result
+        .filter((todo) =>
+          todo.title.toLowerCase().includes(search.toLowerCase()),
+        )
+        .sort(sortTodos);
+    }
+
+    if (limit !== undefined) {
+      result = result.sort(sortTodos).slice(0, limit);
+    }
+
+    if (orderBy !== undefined) {
+      switch (orderBy) {
+        case 'asc':
+          result = result.sort(
+            (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+          );
+          break;
+        case 'desc':
+          result = result.sort(
+            (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+          );
+          break;
+        case 'updatedAt':
+          result = result.sort(
+            (a, b) => a.updatedAt.getTime() - b.updatedAt.getTime(),
+          );
+          break;
+        case 'createdAt':
+          result = result.sort(
+            (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+          );
+          break;
+      }
+    }
+
+    return result;
   }
 
   findOneById(id: number): Todo | undefined {
