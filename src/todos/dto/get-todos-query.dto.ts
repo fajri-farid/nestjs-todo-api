@@ -8,8 +8,14 @@ import {
   IsIn,
   Max,
 } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class GetTodosQueryDto {
+  @ApiPropertyOptional({
+    description: 'Filter todos by completion status',
+    example: false,
+    type: Boolean,
+  })
   @IsOptional()
   @Transform(({ value }) => {
     if (value === 'true' || value === true) return true;
@@ -19,6 +25,13 @@ export class GetTodosQueryDto {
   @IsBoolean()
   isCompleted?: boolean;
 
+  @ApiPropertyOptional({
+    description: 'Limit the number of results',
+    example: 10,
+    minimum: 1,
+    maximum: 100,
+    type: Number,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -26,11 +39,21 @@ export class GetTodosQueryDto {
   @Max(100)
   limit?: number;
 
+  @ApiPropertyOptional({
+    description: 'Search todos by title (case-insensitive)',
+    example: 'nestjs',
+    type: String,
+  })
   @IsOptional()
   @Type(() => String)
   @IsString()
   search?: string;
 
+  @ApiPropertyOptional({
+    description: 'Sort order for the results',
+    example: 'desc',
+    enum: ['createdAt', 'updatedAt', 'asc', 'desc'],
+  })
   @IsOptional()
   @IsIn(['createdAt', 'updatedAt', 'asc', 'desc'])
   @Type(() => String)
