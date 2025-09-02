@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsString, MinLength, IsBoolean } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  MinLength,
+  IsBoolean,
+  IsOptional,
+} from 'class-validator';
 
 export class CreateTodoDto {
   @IsString()
@@ -7,5 +13,6 @@ export class CreateTodoDto {
   title: string;
 
   @IsBoolean()
-  isCompleted: boolean = false;
+  @IsOptional()
+  isCompleted?: boolean;
 }

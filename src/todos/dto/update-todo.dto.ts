@@ -1,12 +1,12 @@
 import { IsOptional, IsString, MinLength, IsBoolean } from 'class-validator';
 
 export class UpdateTodoDto {
-  @IsString()
   @IsOptional()
-  @MinLength(3)
+  @IsString()
+  @MinLength(3, { message: 'Title must be at least 3 characters long' })
   title?: string;
 
-  @IsBoolean()
   @IsOptional()
+  @IsBoolean()
   isCompleted?: boolean;
 }

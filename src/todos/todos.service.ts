@@ -1,13 +1,11 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
+import * as admin from 'firebase-admin';
+import { removeUndefined } from './utils/removeUndefined';
 
 export interface Todo {
-  id: number;
+  id: string;
   title: string;
   isCompleted: boolean;
   createdAt: Date;
@@ -16,122 +14,134 @@ export interface Todo {
 
 @Injectable()
 export class TodosService {
-  private todos: Todo[] = [
-    {
-      id: 1,
-      title: 'learn nestjs',
-      isCompleted: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      id: 2,
-      title: 'learn typescript',
-      isCompleted: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      id: 3,
-      title: 'learn laravel',
-      isCompleted: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  ];
-  private nextId = 4;
+  private collection: FirebaseFirestore.CollectionReference;
 
-  findAll(): Todo[] {
-    return this.todos;
+  constructor(
+    @Inject('FIREBASE_APP') private readonly firebaseApp: admin.app.App,
+  ) {
+    this.collection = this.firebaseApp.firestore().collection('todos');
   }
 
-  findByFilters(
+  async findAll(): Promise<Todo[]> {
+    try {
+      const snapshot = await this.collection.get();
+      return snapshot.docs.map(
+        (doc) => ({ id: doc.id, ...doc.data() }) as Todo,
+      );
+    } catch (err) {
+      console.error('FIREBASE ERROR:', err);
+      throw err;
+    }
+  }
+
+  async findByFilters(
     isCompleted?: boolean,
     limit?: number,
     search?: string,
-    sortBy: 'createdAt' | 'updatedAt' = 'createdAt', // default to 'createdAt' if not provided
-    orderBy: 'asc' | 'desc' = 'desc', // default to 'desc' if not provided
-  ): Todo[] {
-    let result = [...this.todos];
+    sortBy: 'createdAt' | 'updatedAt' = 'createdAt',
+    orderBy: 'asc' | 'desc' = 'desc',
+  ): Promise<Todo[]> {
+    let query: FirebaseFirestore.Query = this.collection;
 
-    // Apply filtering
+    // Filter status
     if (isCompleted !== undefined) {
-      result = result.filter((todo) => todo.isCompleted === isCompleted);
+      query = query.where('isCompleted', '==', isCompleted);
     }
 
-    if (search !== undefined) {
-      result = result.filter((todo) =>
-        todo.title.toLowerCase().includes(search.toLowerCase()),
-      );
+    // Search by title
+    if (search) {
+      query = query
+        .where('title', '>=', search)
+        .where('title', '<=', search + '\uf8ff');
     }
 
-    // Sort the results with two priorities:
-    // 1. Incomplete todos (isCompleted = false) come first
-    // 2. Within the same group, sort by the selected field (createdAt/updatedAt)
-    //    using the specified order (asc = oldest first, desc = newest first)
-    result = result.sort((a, b) => {
-      // Priority 1: incomplete first
+    // Sort by field - Firestore hanya bisa single sort
+    query = query.orderBy(
+      sortBy,
+      orderBy as FirebaseFirestore.OrderByDirection,
+    );
+
+    // Ambil semua data dulu
+    const snapshot = await query.get();
+    let results = snapshot.docs.map(
+      (doc) =>
+        ({
+          id: doc.id,
+          ...doc.data(),
+        }) as Todo,
+    );
+
+    // **DUAL SORTING di memory** - ini yang bikin sorting jadi beda
+    // Priority 1: Incomplete todos first
+    // Priority 2: Sort by selected field
+    results = results.sort((a, b) => {
+      // Incomplete todos (false) come first
       if (a.isCompleted !== b.isCompleted) {
         return a.isCompleted ? 1 : -1;
       }
 
-      // Priority 2: based on sortBy + orderBy
-      const fieldA = a[sortBy].getTime();
-      const fieldB = b[sortBy].getTime();
+      // Same completion status, sort by field
+      const fieldA = new Date(a[sortBy]).getTime();
+      const fieldB = new Date(b[sortBy]).getTime();
+
       return orderBy === 'asc' ? fieldA - fieldB : fieldB - fieldA;
     });
 
     // Apply limit after sorting
-    if (limit !== undefined) {
-      result = result.slice(0, limit);
+    if (limit) {
+      results = results.slice(0, limit);
     }
 
-    return result;
+    return results;
   }
 
-  findOneById(id: number): Todo | undefined {
-    if (id <= 0) {
-      throw new BadRequestException('ID must be a positive number');
-    }
+  async findOneById(id: string): Promise<Todo> {
+    const doc = await this.collection.doc(id).get();
 
-    const todo = this.todos.find((todo) => todo.id === id);
-
-    if (!todo) {
+    if (!doc.exists) {
       throw new NotFoundException(`Todo with ID ${id} not found`);
     }
 
-    return todo;
+    return { id: doc.id, ...doc.data() } as Todo;
   }
 
-  createTodo(createTodoDto: CreateTodoDto): Todo {
-    const newTodo: Todo = {
-      id: this.nextId++,
+  async createTodo(createTodoDto: CreateTodoDto): Promise<Todo> {
+    const now = new Date();
+
+    const docRef = await this.collection.add({
       title: createTodoDto.title,
-      isCompleted: createTodoDto.isCompleted,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    this.todos.push(newTodo);
-    return newTodo;
+      isCompleted: createTodoDto.isCompleted ?? false,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const doc = await docRef.get();
+    return { id: doc.id, ...doc.data() } as Todo;
   }
 
-  updateOneById(id: number, updateTodoDto: UpdateTodoDto): Todo {
-    const todoId = this.findOneById(id);
+  async updateOneById(id: string, updateTodoDto: UpdateTodoDto): Promise<Todo> {
+    const docRef = this.collection.doc(id);
+    const doc = await docRef.get();
 
-    const editedTodo: Todo = {
-      ...todoId,
-      ...updateTodoDto,
+    if (!doc.exists) {
+      throw new NotFoundException(`Todo with ID ${id} not found`);
+    }
+
+    await docRef.update({
+      ...removeUndefined(updateTodoDto),
       updatedAt: new Date(),
-    } as Todo;
+    });
 
-    this.todos = this.todos.map((t) => (t.id === id ? editedTodo : t));
-
-    return editedTodo;
+    const updated = await docRef.get();
+    return { id: updated.id, ...updated.data() } as Todo;
   }
 
-  deleteOneById(id: number): void {
-    this.findOneById(id);
-
-    this.todos = this.todos.filter((todo) => todo.id !== id);
+  async deleteOneById(id: string): Promise<void> {
+    const docRef = this.collection.doc(id);
+    const doc = await docRef.get();
+    if (!doc.exists) {
+      throw new NotFoundException(`Todo with ID ${id} not found`);
+    }
+    await docRef.delete();
   }
 }

@@ -6,7 +6,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -33,7 +32,7 @@ export class TodosController {
   }
 
   @Get(':id')
-  findOneById(@Param('id', ParseIntPipe) id: number) {
+  findOneById(@Param('id') id: string) {
     return this.todosService.findOneById(id);
   }
 
@@ -44,16 +43,13 @@ export class TodosController {
   }
 
   @Patch(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateTodoDto: UpdateTodoDto,
-  ) {
+  update(@Param('id') id: string, @Body() updateTodoDto: UpdateTodoDto) {
     return this.todosService.updateOneById(id, updateTodoDto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  delete(@Param('id', ParseIntPipe) id: number) {
+  delete(@Param('id') id: string) {
     return this.todosService.deleteOneById(id);
   }
 }
