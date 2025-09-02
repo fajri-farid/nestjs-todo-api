@@ -1,5 +1,13 @@
 import { Transform, Type } from 'class-transformer';
-import { IsOptional, IsInt, IsString, Min, IsBoolean } from 'class-validator';
+import {
+  IsOptional,
+  IsInt,
+  IsString,
+  Min,
+  IsBoolean,
+  IsIn,
+  Max,
+} from 'class-validator';
 
 export class GetTodosQueryDto {
   @IsOptional()
@@ -15,6 +23,7 @@ export class GetTodosQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(100)
   limit?: number;
 
   @IsOptional()
@@ -23,6 +32,7 @@ export class GetTodosQueryDto {
   search?: string;
 
   @IsOptional()
+  @IsIn(['createdAt', 'updatedAt', 'asc', 'desc'])
   @Type(() => String)
   @IsString()
   orderBy?: 'createdAt' | 'updatedAt' | 'asc' | 'desc';

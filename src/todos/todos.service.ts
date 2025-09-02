@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
 import { sortTodos } from './utils/todo-sort.util';
@@ -95,6 +99,10 @@ export class TodosService {
   }
 
   findOneById(id: number): Todo | undefined {
+    if (id <= 0) {
+      throw new BadRequestException('ID must be a positive number');
+    }
+
     const todo = this.todos.find((todo) => todo.id === id);
 
     if (!todo) {

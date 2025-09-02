@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseIntPipe,
   Patch,
@@ -30,6 +32,7 @@ export class TodosController {
   }
 
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   create(@Body() createTodoDto: CreateTodoDto) {
     return this.todosService.createTodo(createTodoDto);
   }
@@ -43,6 +46,7 @@ export class TodosController {
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   delete(@Param('id', ParseIntPipe) id: number) {
     return this.todosService.deleteOneById(id);
   }
