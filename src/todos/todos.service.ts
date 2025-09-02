@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
-import { sortTodos } from './utils/todo-sort.util';
 
 export interface Todo {
   id: number;
@@ -50,49 +49,41 @@ export class TodosService {
     isCompleted?: boolean,
     limit?: number,
     search?: string,
-    orderBy?: 'createdAt' | 'updatedAt' | 'asc' | 'desc',
+    sortBy: 'createdAt' | 'updatedAt' = 'createdAt', // default to 'createdAt' if not provided
+    orderBy: 'asc' | 'desc' = 'desc', // default to 'desc' if not provided
   ): Todo[] {
     let result = [...this.todos];
 
+    // Apply filtering
     if (isCompleted !== undefined) {
       result = result.filter((todo) => todo.isCompleted === isCompleted);
     }
 
     if (search !== undefined) {
-      result = result
-        .filter((todo) =>
-          todo.title.toLowerCase().includes(search.toLowerCase()),
-        )
-        .sort(sortTodos);
+      result = result.filter((todo) =>
+        todo.title.toLowerCase().includes(search.toLowerCase()),
+      );
     }
 
-    if (limit !== undefined) {
-      result = result.sort(sortTodos).slice(0, limit);
-    }
-
-    if (orderBy !== undefined) {
-      switch (orderBy) {
-        case 'asc':
-          result = result.sort(
-            (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
-          );
-          break;
-        case 'desc':
-          result = result.sort(
-            (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-          );
-          break;
-        case 'updatedAt':
-          result = result.sort(
-            (a, b) => a.updatedAt.getTime() - b.updatedAt.getTime(),
-          );
-          break;
-        case 'createdAt':
-          result = result.sort(
-            (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
-          );
-          break;
+    // Sort the results with two priorities:
+    // 1. Incomplete todos (isCompleted = false) come first
+    // 2. Within the same group, sort by the selected field (createdAt/updatedAt)
+    //    using the specified order (asc = oldest first, desc = newest first)
+    result = result.sort((a, b) => {
+      // Priority 1: incomplete first
+      if (a.isCompleted !== b.isCompleted) {
+        return a.isCompleted ? 1 : -1;
       }
+
+      // Priority 2: based on sortBy + orderBy
+      const fieldA = a[sortBy].getTime();
+      const fieldB = b[sortBy].getTime();
+      return orderBy === 'asc' ? fieldA - fieldB : fieldB - fieldA;
+    });
+
+    // Apply limit after sorting
+    if (limit !== undefined) {
+      result = result.slice(0, limit);
     }
 
     return result;

@@ -22,8 +22,14 @@ export class TodosController {
 
   @Get()
   findAll(@Query() query: GetTodosQueryDto) {
-    const { isCompleted, limit, search, orderBy } = query;
-    return this.todosService.findByFilters(isCompleted, limit, search, orderBy);
+    const { isCompleted, limit, search, sortBy, orderBy } = query;
+    return this.todosService.findByFilters(
+      isCompleted,
+      limit,
+      search,
+      sortBy,
+      orderBy,
+    );
   }
 
   @Get(':id')

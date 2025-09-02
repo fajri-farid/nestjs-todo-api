@@ -32,8 +32,14 @@ export class GetTodosQueryDto {
   search?: string;
 
   @IsOptional()
-  @IsIn(['createdAt', 'updatedAt', 'asc', 'desc'])
+  @IsIn(['createdAt', 'updatedAt'])
   @Type(() => String)
   @IsString()
-  orderBy?: 'createdAt' | 'updatedAt' | 'asc' | 'desc';
+  sortBy?: 'createdAt' | 'updatedAt';
+
+  @IsOptional()
+  @IsIn(['asc', 'desc'])
+  @Type(() => String)
+  @IsString()
+  orderBy?: 'asc' | 'desc';
 }
