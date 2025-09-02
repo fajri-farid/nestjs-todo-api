@@ -1,10 +1,10 @@
 import { Todo } from '../todos.service';
 
 export function sortTodos(a: Todo, b: Todo): number {
-  // Prioritas 1: todo yang belum selesai (false) duluan
+  // Priority 1: incomplete todos (false) first
   if (a.isCompleted !== b.isCompleted) {
-    return a.isCompleted ? 1 : -1; // false di atas, true di bawah
+    return a.isCompleted ? 1 : -1; // false on top, true at the bottom
   }
-  // Prioritas 2: createdAt terbaru duluan
+  // Priority 2: newest createdAt first
   return b.createdAt.getTime() - a.createdAt.getTime();
 }

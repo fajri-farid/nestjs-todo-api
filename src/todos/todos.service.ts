@@ -20,21 +20,21 @@ export class TodosService {
   private todos: Todo[] = [
     {
       id: 1,
-      title: 'belajar nestjs',
+      title: 'learn nestjs',
       isCompleted: false,
       createdAt: new Date(),
       updatedAt: new Date(),
     },
     {
       id: 2,
-      title: 'belajar typescript',
+      title: 'learn typescript',
       isCompleted: false,
       createdAt: new Date(),
       updatedAt: new Date(),
     },
     {
       id: 3,
-      title: 'belajar laravel',
+      title: 'learn laravel',
       isCompleted: false,
       createdAt: new Date(),
       updatedAt: new Date(),
